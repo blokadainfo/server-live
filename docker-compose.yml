@@ -107,6 +107,20 @@ services:
       - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdseclapikey=${BOUNCER_KEY_TRAEFIK}"
       - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdsecappsecenabled=true"
     restart: unless-stopped
+  mumble:
+    image: docker.io/mumblevoip/mumble-server:v1.5.735
+    environment:
+      MUMBLE_SUPERUSER_NAME: admin
+      MUMBLE_SUPERUSER_PASSWORD: ${MUMBLE_ADMIN_PASSWORD}
+      MUMBLE_CONFIG_SERVER_PASSWORD: ${MUMBLE_USER_PASSWORD}
+    volumes:
+      - "mumble-data-vol:/data:Z"
+    ports:
+      - "64738:64738/tcp"
+      - "64738:64738/udp"
+    networks:
+      - internal
+    restart: unless-stopped
 networks:
   internal:
 volumes:
@@ -117,3 +131,4 @@ volumes:
   restreamer-conf-vol:
   restreamer-data-vol:
   wg-conf-vol:
+  mumble-data-vol:
