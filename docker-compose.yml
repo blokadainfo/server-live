@@ -71,6 +71,65 @@ services:
       - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdseclapikey=${BOUNCER_KEY_TRAEFIK}"
       - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdsecappsecenabled=true"
     restart: unless-stopped
+  osh-frontend:
+    image: docker.io/sythinian/open-stream-hub-frontend:latest # TODO: not latest
+    depends_on:
+      - osh-backend
+    environment:
+      - VITE_REST_API_HOST=https://${OSH_DOMAIN}
+    networks:
+      - internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.osh-frontend.rule=Host(`${OSH_DOMAIN}`)"
+      - "traefik.http.routers.osh-frontend.middlewares=crowdsec@docker,auth@docker"
+      - "traefik.http.routers.osh-frontend.entrypoints=websecure"
+      - "traefik.http.routers.osh-frontend.tls=true"
+      - "traefik.http.routers.osh-frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.osh-frontend.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.auth.basicauth.users=${BASIC_AUTH}"
+      - "traefik.http.middlewares.crowdsec.plugin.bouncer.enabled=true"
+      - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdsecmode=stream"
+      - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdseclapikey=${BOUNCER_KEY_TRAEFIK}"
+      - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdsecappsecenabled=true"
+    restart: unless-stopped
+  osh-backend:
+    image: docker.io/sythinian/open-stream-hub-backend:latest # TODO: not latest
+    depends_on:
+      - osh-mongodb
+    ports:
+      - "19355:19355"
+    environment:
+      - MONGODB_URI=mongodb://osh-mongodb:27017/open-stream-hubV2
+      - REST_API_PORT=6636
+      - RTMP_SERVER_PORT=19355
+      - RTMP_INJECT_HOST=rtmp://${OSH_DOMAIN}
+      - RTMP_INJECT_ROOT=/inject
+      - RTMP_WATCH_ROOT=/watch
+      - HSL_PREVIEW_ENABLED=false # Consumes a lot of cpu
+    networks:
+      - internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.osh-backend.rule=Host(`${OSH_DOMAIN}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.osh-backend.middlewares=crowdsec@docker,auth@docker"
+      - "traefik.http.routers.osh-backend.entrypoints=websecure"
+      - "traefik.http.routers.osh-backend.tls=true"
+      - "traefik.http.routers.osh-backend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.osh-backend.loadbalancer.server.port=6636"
+      - "traefik.http.middlewares.auth.basicauth.users=${BASIC_AUTH}"
+      - "traefik.http.middlewares.crowdsec.plugin.bouncer.enabled=true"
+      - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdsecmode=stream"
+      - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdseclapikey=${BOUNCER_KEY_TRAEFIK}"
+      - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdsecappsecenabled=true"
+    restart: unless-stopped
+  osh-mongodb:
+    image: docker.io/library/mongo:8.0.8 # Has to be 4 when AVX isn't supported
+    volumes:
+      - "mongodb-data-vol:/data/db:Z"
+    networks:
+      - internal
+    restart: unless-stopped
   wg-easy:
     image: ghcr.io/wg-easy/wg-easy:14
     cap_add:
@@ -130,5 +189,6 @@ volumes:
   traefik-acme-vol:
   restreamer-conf-vol:
   restreamer-data-vol:
+  mongodb-data-vol:
   wg-conf-vol:
   mumble-data-vol:
