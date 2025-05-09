@@ -44,14 +44,23 @@ services:
   restreamer:
     image: docker.io/datarhei/restreamer:dev # TODO: 2.12.0
     environment:
+      CORE_ADDRESS: ":8080"
       CORE_HOST_NAME: ${RESTREAMER_DOMAIN}
       CORE_API_AUTH_USERNAME: ${RESTREAMER_USERNAME}
       CORE_API_AUTH_PASSWORD: ${RESTREAMER_PASSWORD}
+      CORE_TLS_ENABLE: false
+      CORE_TLS_AUTO: false
       CORE_RTMP_ENABLE: true
       CORE_RTMP_ENABLE_TLS: false
+      CORE_RTMP_ADDRESS: ":1935"
       CORE_RTMP_APP: "/live"
+      CORE_RTMP_TOKEN: ""
       CORE_SRT_ENABLE: true
+      CORE_SRT_ADDRESS: ":6000"
+      CORE_SRT_TOKEN: ""
       CORE_SRT_PASSPHRASE: ${RESTREAMER_SRT_PASSPHRASE}
+      CORE_SESSIONS_MAXBITRATE_MBIT: 0
+      CORE_SESSIONS_MAXSESSIONS: 0
     volumes:
       - "restreamer-conf-vol:/core/config:Z"
       - "restreamer-data-vol:/core/data:Z"
