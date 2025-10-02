@@ -123,6 +123,26 @@ services:
       - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdsecappsecenabled=true"
     restart: unless-stopped
 
+  # Mumble
+  mumble:
+    image: docker.io/mumblevoip/mumble-server:v1.5.735
+    environment:
+      MUMBLE_SUPERUSER_NAME: admin
+      MUMBLE_SUPERUSER_PASSWORD: ${MUMBLE_ADMIN_PASSWORD}
+      MUMBLE_CONFIG_SERVER_PASSWORD: ${MUMBLE_USER_PASSWORD}
+    volumes:
+      - type: volume
+        source: mumble-data-vol
+        target: /data
+        volume:
+          nocopy: false
+    ports:
+      - "64738:64738/tcp"
+      - "64738:64738/udp"
+    networks:
+      - internal
+    restart: unless-stopped
+
   # (disabled) Open Stream Hub
   # osh-frontend:
   #   image: docker.io/sythinian/open-stream-hub-frontend:latest # TODO: not latest
@@ -190,26 +210,6 @@ services:
   #     - internal
   #   restart: unless-stopped
 
-  # Mumble
-  mumble:
-    image: docker.io/mumblevoip/mumble-server:v1.5.735
-    environment:
-      MUMBLE_SUPERUSER_NAME: admin
-      MUMBLE_SUPERUSER_PASSWORD: ${MUMBLE_ADMIN_PASSWORD}
-      MUMBLE_CONFIG_SERVER_PASSWORD: ${MUMBLE_USER_PASSWORD}
-    volumes:
-      - type: volume
-        source: mumble-data-vol
-        target: /data
-        volume:
-          nocopy: false
-    ports:
-      - "64738:64738/tcp"
-      - "64738:64738/udp"
-    networks:
-      - internal
-    restart: unless-stopped
-
 networks:
   internal:
 
@@ -220,5 +220,5 @@ volumes:
   traefik-acme-vol:
   restreamer-conf-vol:
   restreamer-data-vol:
-  # mongodb-data-vol:
   mumble-data-vol:
+  # mongodb-data-vol:
