@@ -78,8 +78,7 @@ services:
     environment:
       CORE_ADDRESS: ":8080"
       CORE_HOST_NAME: ${RESTREAMER_DOMAIN}
-      CORE_API_AUTH_USERNAME: ${RESTREAMER_USERNAME}
-      CORE_API_AUTH_PASSWORD: ${RESTREAMER_PASSWORD}
+      CORE_API_AUTH_ENABLE: false # WARN: Authelia SSO must setup
       CORE_TLS_ENABLE: false
       CORE_TLS_AUTO: false
       CORE_RTMP_ENABLE: true
@@ -112,7 +111,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.backend.rule=Host(`${RESTREAMER_DOMAIN}`)"
-      - "traefik.http.routers.backend.middlewares=crowdsec@docker"
+      - "traefik.http.routers.backend.middlewares=crowdsec@docker,authelia@docker"
       - "traefik.http.routers.backend.entrypoints=websecure"
       - "traefik.http.routers.backend.tls=true"
       - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
@@ -121,6 +120,9 @@ services:
       - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdsecmode=stream"
       - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdseclapikey=${BOUNCER_KEY_TRAEFIK}"
       - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdsecappsecenabled=true"
+      - "traefik.http.middlewares.authelia.forwardAuth.address=https://auth.blokada.info/api/authz/forward-auth"
+      - "traefik.http.middlewares.authelia.forwardAuth.trustForwardHeader=true"
+      - "traefik.http.middlewares.authelia.forwardAuth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Email,Remote-Name"
     restart: unless-stopped
 
   # Mumble
