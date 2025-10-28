@@ -125,6 +125,24 @@ services:
       - "traefik.http.middlewares.authelia.forwardAuth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Email,Remote-Name"
     restart: unless-stopped
 
+  # Overlayer
+  overlayer:
+    image: ghcr.io/blokadainfo/overlayer:develop
+    environment:
+      OVERLAY_LOGO_PATH: "/logo.svg"
+      OVERLAY_LOGO_HEIGHT: 128
+      OVERLAY_LOGO_WIDTH: 128
+      STREAMS_0_SRC: ${OVERLAYER_STREAMS_0_SRC}
+      STREAMS_0_DST: ${OVERLAYER_STREAMS_0_DST}
+      # STREAMS_1_SRC: ${OVERLAYER_STREAMS_1_SRC}
+      # STREAMS_1_DST: ${OVERLAYER_STREAMS_1_DST}
+    volumes:
+      - type: bind
+        source: ./logo.svg
+        target: /logo.svg
+        read_only: true
+    restart: unless-stopped
+
   # Mumble
   mumble:
     image: docker.io/mumblevoip/mumble-server:v1.5.735
