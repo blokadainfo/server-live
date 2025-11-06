@@ -127,7 +127,7 @@ services:
 
   # Overlayer
   overlayer:
-    image: ghcr.io/blokadainfo/overlayer:develop
+    image: ghcr.io/blokadainfo/overlayer:v1.0.0
     environment:
       OVERLAY_LOGO_PATH: "/logo.svg"
       OVERLAY_LOGO_HEIGHT: 128
