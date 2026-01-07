@@ -126,6 +126,23 @@ services:
     healthcheck:
       disable: true # TODO
 
+  # BBox Receiver
+  bbox-receiver:
+    image: docker.io/datagutt/belabox-receiver:2.9.0
+    ports:
+      - "5000:5000/udp" # SRTLA
+      # - "8282:8282/udp" # SRT OUT - Not needed as we pull the stream in Mist (docker internal network)
+      # - "8181:8181/tcp" # Stats - Not needed (yet)
+      # - "3000:3000/tcp" # Stats (Legacy) - Not needed
+    volumes:
+      - type: bind
+        source: ./config/bbox-receiver.json
+        target: /app/config.json
+        read_only: true
+    networks:
+      - internal
+    restart: unless-stopped
+
   # Overlayer
   overlayer:
     image: ghcr.io/blokadainfo/overlayer:v1.0.0
