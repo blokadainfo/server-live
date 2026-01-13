@@ -27,32 +27,43 @@ services:
         target: /etc/crowdsec/acquis.yaml
         read_only: true
     networks:
-      - internal
+      - traefik-2-crowdsec
     restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --spider --quiet --tries=1 --timeout=5 http://localhost:8080/health > /dev/null 2>&1 || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   traefik:
-    depends_on:
-      - crowdsec
     image: docker.io/library/traefik:v3.6.6
     command:
       - "--accesslog"
       - "--accesslog.filepath=/var/log/traefik/access.log"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.address=:8080"
+      - "--entrypoints.web.http.redirections.entrypoint.to=:443"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.middlewares=crowdsec@docker"
+      - "--entrypoints.websecure.address=:8443"
       - "--entrypoints.websecure.http3"
+      - "--entrypoints.websecure.http3.advertisedPort=443"
+      - "--entrypoints.websecure.http.middlewares=crowdsec@docker"
       - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
       - "--certificatesresolvers.letsencrypt.acme.storage=acme/acme.json"
       - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
       - "--experimental.plugins.bouncer.modulename=github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin"
       - "--experimental.plugins.bouncer.version=v1.4.6"
     ports:
-      - "80:80/tcp"
-      - "443:443/tcp"
-      - "443:443/udp"
+      - "80:8080/tcp"
+      - "443:8443/tcp"
+      - "443:8443/udp"
     volumes:
       - type: volume
         source: traefik-logs-vol
@@ -69,8 +80,33 @@ services:
         target: /var/run/docker.sock
         read_only: true
     networks:
-      - internal
+      - traefik-2-crowdsec
+      - traefik-2-whoami
+      - traefik-2-mist
     restart: unless-stopped
+    depends_on:
+      crowdsec:
+        condition: service_healthy
+        restart: true
+
+  whoami:
+    image: docker.io/traefik/whoami:v1.11
+    command:
+      - "--port=8080"
+      - "--name=whoami"
+    networks:
+      - traefik-2-whoami
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${DOCKER_NETWORK_PREFIX}_traefik-2-whoami"
+      - "traefik.http.middlewares.crowdsec.plugin.bouncer.enabled=true"
+      - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdsecmode=stream"
+      - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdseclapikey=${BOUNCER_KEY_TRAEFIK}"
+      - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdsecappsecenabled=true"
+      - "traefik.http.middlewares.authelia.forwardAuth.address=https://${AUTHELIA_DOMAIN}/api/authz/forward-auth"
+      - "traefik.http.middlewares.authelia.forwardAuth.trustForwardHeader=true"
+      - "traefik.http.middlewares.authelia.forwardAuth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Email,Remote-Name"
 
   # Mist
   mist:
@@ -86,7 +122,10 @@ services:
       - "8889:8889/udp" # SRT IN
       - "9000:9000/udp" # SRT OUT
     networks:
-      - internal
+      - mist-2-bbox-receiver
+      - traefik-2-mist
+      - overlayer-2-mist
+      - streamecho-2-mist
     volumes:
       - type: volume
         source: mist-data-vol
@@ -100,8 +139,9 @@ services:
           nocopy: false
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=${DOCKER_NETWORK_PREFIX}_traefik-2-mist"
       - "traefik.http.routers.mist-ui.rule=Host(`${MIST_DOMAIN}`)"
-      - "traefik.http.routers.mist-ui.middlewares=crowdsec@docker,authelia@docker"
+      - "traefik.http.routers.mist-ui.middlewares=authelia@docker"
       - "traefik.http.routers.mist-ui.entrypoints=websecure"
       - "traefik.http.routers.mist-ui.tls=true"
       - "traefik.http.routers.mist-ui.tls.certresolver=letsencrypt"
@@ -109,19 +149,11 @@ services:
       - "traefik.http.services.mist-ui.loadbalancer.server.port=4242"
       # TODO
       # - "traefik.http.routers.mist-preview.rule=Host(`${MIST_PREVIEW_DOMAIN}`)"
-      # - "traefik.http.routers.mist-preview.middlewares=crowdsec@docker"
       # - "traefik.http.routers.mist-preview.entrypoints=websecure"
       # - "traefik.http.routers.mist-preview.tls=true"
       # - "traefik.http.routers.mist-preview.tls.certresolver=letsencrypt"
       # - "traefik.http.routers.mist-preview.service=mist-preview"
       # - "traefik.http.services.mist-preview.loadbalancer.server.port=8080"
-      - "traefik.http.middlewares.crowdsec.plugin.bouncer.enabled=true"
-      - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdsecmode=stream"
-      - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdseclapikey=${BOUNCER_KEY_TRAEFIK}"
-      - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdsecappsecenabled=true"
-      - "traefik.http.middlewares.authelia.forwardAuth.address=https://${AUTHELIA_DOMAIN}/api/authz/forward-auth"
-      - "traefik.http.middlewares.authelia.forwardAuth.trustForwardHeader=true"
-      - "traefik.http.middlewares.authelia.forwardAuth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Email,Remote-Name"
     restart: unless-stopped
     healthcheck:
       disable: true # TODO
@@ -140,7 +172,7 @@ services:
         target: /app/config.json
         read_only: true
     networks:
-      - internal
+      - mist-2-bbox-receiver
     restart: unless-stopped
 
   # Overlayer
@@ -165,7 +197,7 @@ services:
         target: /logo.svg
         read_only: true
     networks:
-      - internal
+      - overlayer-2-mist
     restart: unless-stopped
 
   # Mumble
@@ -185,7 +217,7 @@ services:
       - "64738:64738/tcp"
       - "64738:64738/udp"
     networks:
-      - internal
+      - streamecho-2-mumble
     restart: unless-stopped
 
   # StreamEcho
@@ -197,64 +229,18 @@ services:
       MUMBLE_PASSWORD: ${MUMBLE_USER_PASSWORD}
       STREAM_URL: ${STREAMECHO_STREAM_URL}
     networks:
-      - internal
+      - streamecho-2-mist
+      - streamecho-2-mumble
     restart: unless-stopped
 
-  # (disabled) Restreamer
-  # restreamer:
-  #   image: docker.io/datarhei/restreamer:dev # TODO: stable ver tag
-  #   environment:
-  #     CORE_ADDRESS: ":8080"
-  #     CORE_HOST_NAME: ${RESTREAMER_DOMAIN}
-  #     CORE_API_AUTH_ENABLE: false # WARN: Authelia SSO must setup
-  #     CORE_TLS_ENABLE: false
-  #     CORE_TLS_AUTO: false
-  #     CORE_RTMP_ENABLE: true
-  #     CORE_RTMP_ENABLE_TLS: false
-  #     CORE_RTMP_ADDRESS: ":1935"
-  #     CORE_RTMP_APP: "/live"
-  #     CORE_RTMP_TOKEN: ""
-  #     CORE_SRT_ENABLE: true
-  #     CORE_SRT_ADDRESS: ":6000"
-  #     CORE_SRT_TOKEN: ""
-  #     CORE_SRT_PASSPHRASE: ${RESTREAMER_SRT_PASSPHRASE}
-  #     CORE_SESSIONS_MAXBITRATE_MBIT: 0
-  #     CORE_SESSIONS_MAXSESSIONS: 0
-  #   volumes:
-  #     - type: volume
-  #       source: restreamer-conf-vol
-  #       target: /core/config
-  #       volume:
-  #         nocopy: false
-  #     - type: volume
-  #       source: restreamer-data-vol
-  #       target: /core/data
-  #       volume:
-  #         nocopy: false
-  #   ports:
-  #     - "1935:1935/tcp" # RTMP
-  #     - "6000:6000/udp" # SRT
-  #   networks:
-  #     - internal
-  #   labels:
-  #     - "traefik.enable=true"
-  #     - "traefik.http.routers.restreamer.rule=Host(`${RESTREAMER_DOMAIN}`)"
-  #     - "traefik.http.routers.restreamer.middlewares=crowdsec@docker,authelia@docker"
-  #     - "traefik.http.routers.restreamer.entrypoints=websecure"
-  #     - "traefik.http.routers.restreamer.tls=true"
-  #     - "traefik.http.routers.restreamer.tls.certresolver=letsencrypt"
-  #     - "traefik.http.services.restreamer.loadbalancer.server.port=8080"
-  #     - "traefik.http.middlewares.crowdsec.plugin.bouncer.enabled=true"
-  #     - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdsecmode=stream"
-  #     - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdseclapikey=${BOUNCER_KEY_TRAEFIK}"
-  #     - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdsecappsecenabled=true"
-  #     - "traefik.http.middlewares.authelia.forwardAuth.address=https://${AUTHELIA_DOMAIN}/api/authz/forward-auth"
-  #     - "traefik.http.middlewares.authelia.forwardAuth.trustForwardHeader=true"
-  #     - "traefik.http.middlewares.authelia.forwardAuth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Email,Remote-Name"
-  #   restart: unless-stopped
-
 networks:
-  internal:
+  traefik-2-crowdsec:
+  traefik-2-whoami:
+  traefik-2-mist:
+  mist-2-bbox-receiver:
+  overlayer-2-mist:
+  streamecho-2-mist:
+  streamecho-2-mumble:
 
 volumes:
   crowdsec-db-vol:
@@ -264,5 +250,3 @@ volumes:
   mist-data-vol:
   mist-video-vol:
   mumble-data-vol:
-  # restreamer-conf-vol:
-  # restreamer-data-vol:
