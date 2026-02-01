@@ -83,7 +83,6 @@ services:
       - traefik-2-crowdsec
       - traefik-2-whoami
       - traefik-2-mist
-      - traefik-2-wireguard
     restart: unless-stopped
     depends_on:
       crowdsec:
