@@ -161,6 +161,29 @@ services:
       - "traefik.http.services.wireguard.loadbalancer.server.port=51821"
     restart: unless-stopped
 
+  # BelaUI Remote
+  belaui-remote:
+    image: docker.io/library/caddy:2.11
+    environment:
+      BELAUI_REMOTE_DOMAIN: ${BELAUI_REMOTE_DOMAIN}
+    volumes:
+      - type: bind
+        source: ./config/Caddyfile
+        target: /etc/caddy/Caddyfile
+        read_only: true
+    network_mode: service:wireguard # Required to reverse proxy requests to internal VPN network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${DOCKER_NETWORK_PREFIX}_traefik-2-wireguard" # WARN: network_mode: service:wireguard
+      - "traefik.http.routers.belaui-remote.rule=Host(`cam1.${BELAUI_REMOTE_DOMAIN}`) || Host(`cam2.${BELAUI_REMOTE_DOMAIN}`) || Host(`cam3.${BELAUI_REMOTE_DOMAIN}`) || Host(`drn1.${BELAUI_REMOTE_DOMAIN}`) || Host(`drn2.${BELAUI_REMOTE_DOMAIN}`)"
+      - "traefik.http.routers.belaui-remote.middlewares=authelia@docker"
+      - "traefik.http.routers.belaui-remote.entrypoints=websecure"
+      - "traefik.http.routers.belaui-remote.tls=true"
+      - "traefik.http.routers.belaui-remote.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.belaui-remote.service=belaui-remote"
+      - "traefik.http.services.belaui-remote.loadbalancer.server.port=80"
+    restart: unless-stopped
+
   # Mist
   mist:
     image: docker.io/ddvtech/mistserver:3.9.2

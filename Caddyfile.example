@@ -1,0 +1,25 @@
+{
+    servers {
+        trusted_proxies static private_ranges
+    }
+}
+
+http://cam1.{$BELAUI_REMOTE_DOMAIN:localhost} {
+    reverse_proxy 172.16.12.4:80
+}
+
+http://cam2.{$BELAUI_REMOTE_DOMAIN:localhost} {
+    reverse_proxy 172.16.12.5:80
+}
+
+http://cam3.{$BELAUI_REMOTE_DOMAIN:localhost} {
+    reverse_proxy 172.16.12.6:80
+}
+
+http://drn1.{$BELAUI_REMOTE_DOMAIN:localhost} {
+    reverse_proxy 172.16.12.7:80
+}
+
+http://drn2.{$BELAUI_REMOTE_DOMAIN:localhost} {
+    reverse_proxy 172.16.12.8:80
+}
