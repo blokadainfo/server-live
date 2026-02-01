@@ -234,69 +234,10 @@ services:
       - streamecho-2-mumble
     restart: unless-stopped
 
-  # VPN
-  wireguard:
-    image: ghcr.io/wg-easy/wg-easy:15.2.1
-    environment:
-      WG_DEVICE: eth0 # Set to eth0 to allow internet, otherwise lo is loopback
-      INIT_ENABLED: true
-      INIT_USERNAME: ${VPN_GUI_USERNAME:-admin}
-      INIT_PASSWORD: ${VPN_GUI_PASSWORD}
-      INIT_HOST: ${VPN_DOMAIN}
-      INIT_PORT: 51820
-      INIT_DNS: ${VPN_DNS:-9.9.9.9,149.112.112.112} # Cannot be disabled
-      INIT_IPV4_CIDR: ${INIT_IPV4_CIDR:-10.8.0.0/24}
-      INIT_IPV6_CIDR: ${INIT_IPV6_CIDR:-2001:0DB8::/32}
-      INIT_ALLOWED_IPS: ${INIT_ALLOWED_IPS:-0.0.0.0/0,::/0}
-    volumes:
-      - type: volume
-        source: wireguard-conf-vol
-        target: /etc/wireguard
-        volume:
-          nocopy: false
-      - type: bind
-        source: /lib/modules
-        target: /lib/modules
-        read_only: true
-    ports:
-      - "51820:51820/udp"
-    networks:
-      traefik-2-wireguard:
-        driver_opts:
-          com.docker.network.endpoint.ifname: eth0
-      # Custom IP addresses required for correct IPv6 setup
-      # wireguard:
-      #   driver_opts:
-      #     com.docker.network.endpoint.ifname: eth0
-      #   ipv4_address: 10.42.42.42
-      #   ipv6_address: fdcc:ad94:bacf:61a3::2a
-    cap_add:
-      - NET_ADMIN
-      - SYS_MODULE
-    sysctls:
-      - net.ipv4.ip_forward=1
-      - net.ipv4.conf.all.src_valid_mark=1
-      # Uncomment to enable IPv6
-      # - net.ipv6.conf.all.disable_ipv6=0
-      # - net.ipv6.conf.all.forwarding=1
-      # - net.ipv6.conf.default.forwarding=1
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=${DOCKER_NETWORK_PREFIX}_traefik-2-wireguard"
-      - "traefik.http.routers.wireguard.rule=Host(`${VPN_DOMAIN}`)"
-      - "traefik.http.routers.wireguard.middlewares=authelia@docker"
-      - "traefik.http.routers.wireguard.entrypoints=websecure"
-      - "traefik.http.routers.wireguard.tls=true"
-      - "traefik.http.routers.wireguard.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.wireguard.service=wireguard"
-      - "traefik.http.services.wireguard.loadbalancer.server.port=51821"
-    restart: unless-stopped
-
 networks:
   traefik-2-crowdsec:
   traefik-2-whoami:
   traefik-2-mist:
-  traefik-2-wireguard:
   mist-2-bbox-receiver:
   overlayer-2-mist:
   streamecho-2-mist:
@@ -310,4 +251,3 @@ volumes:
   mist-data-vol:
   mist-video-vol:
   mumble-data-vol:
-  wireguard-conf-vol:
