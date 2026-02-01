@@ -120,9 +120,9 @@ services:
       INIT_HOST: ${VPN_DOMAIN}
       INIT_PORT: 51820
       INIT_DNS: ${VPN_DNS:-} # WARN: Remove empty DNS entry and add keepalive 25 via GUI
-      INIT_IPV4_CIDR: ${INIT_IPV4_CIDR:-172.16.12.0/24}
-      INIT_IPV6_CIDR: ${INIT_IPV6_CIDR:-2001:0DB8::/32}
-      INIT_ALLOWED_IPS: ${INIT_ALLOWED_IPS:-172.16.12.0/24,2001:0DB8::/32,172.16.13.0/24}
+      INIT_IPV4_CIDR: "172.16.12.0/24"
+      INIT_IPV6_CIDR: "2001:0DB8::/32"
+      INIT_ALLOWED_IPS: "172.16.12.0/24,2001:0DB8::/32,172.16.13.0/24"
     volumes:
       - type: volume
         source: wireguard-conf-vol
