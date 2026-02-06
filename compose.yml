@@ -304,7 +304,7 @@ services:
       MUMBLE_ADDRESS: ${STREAMECHO_MUMBLE_ADDRESS} # TODO: Why mumble internal net doesn't work?
       MUMBLE_USERNAME: "@PROGRAM.LIVE"
       MUMBLE_PASSWORD: ${MUMBLE_USER_PASSWORD}
-      MUMBLE_CHANNEL: ${MUMBLE_CHANNEL:-}
+      MUMBLE_CHANNEL: ${STREAMECHO_MUMBLE_CHANNEL:-}
       STREAM_URL: ${STREAMECHO_STREAM_URL}
     networks:
       - streamecho-2-mist
