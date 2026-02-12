@@ -304,7 +304,7 @@ services:
   streamecho:
     image: ghcr.io/blokadainfo/streamecho:v0.0.4
     environment:
-      MUMBLE_ADDRESS: ${STREAMECHO_MUMBLE_ADDRESS} # TODO: Why mumble internal net doesn't work?
+      MUMBLE_ADDRESS: "mumble:64738"
       MUMBLE_USERNAME: "@PROGRAM.LIVE.BOT"
       MUMBLE_PASSWORD: ${MUMBLE_USER_PASSWORD}
       MUMBLE_CHANNEL: ${STREAMECHO_MUMBLE_CHANNEL:-}
@@ -317,7 +317,7 @@ services:
   streamecho-locked:
     image: ghcr.io/blokadainfo/streamecho:v0.0.4
     environment:
-      MUMBLE_ADDRESS: ${STREAMECHO_MUMBLE_ADDRESS} # TODO: Why mumble internal net doesn't work?
+      MUMBLE_ADDRESS: "mumble:64738"
       MUMBLE_USERNAME: "__dont_touch_ma_spaghet__"
       MUMBLE_PASSWORD: ${MUMBLE_USER_PASSWORD}
       MUMBLE_CHANNEL: ${STREAMECHO_LOCKED_MUMBLE_CHANNEL:-}
@@ -331,7 +331,7 @@ services:
   streamecho-audiocircuit:
     image: ghcr.io/blokadainfo/streamecho:v0.0.4
     environment:
-      MUMBLE_ADDRESS: ${STREAMECHO_MUMBLE_ADDRESS} # TODO: Why mumble internal net doesn't work?
+      MUMBLE_ADDRESS: "mumble:64738"
       MUMBLE_USERNAME: "@AUDIO.CIRCUIT.BOT"
       MUMBLE_PASSWORD: ${MUMBLE_USER_PASSWORD}
       MUMBLE_CHANNEL: ${STREAMECHO_AUDIO_CIRCUIT_MUMBLE_CHANNEL:-}
