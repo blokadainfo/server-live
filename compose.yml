@@ -295,36 +295,56 @@ services:
     networks:
       streamecho-2-mumble:
       streamecho-locked-2-mumble:
+      streamecho-audiocircuit-2-mumble:
       wireguard-2-internal:
         ipv4_address: 172.16.13.2
     restart: unless-stopped
 
   # StreamEcho
   streamecho:
-    image: ghcr.io/blokadainfo/streamecho:v0.0.3
+    image: ghcr.io/blokadainfo/streamecho:v0.0.4
     environment:
       MUMBLE_ADDRESS: ${STREAMECHO_MUMBLE_ADDRESS} # TODO: Why mumble internal net doesn't work?
       MUMBLE_USERNAME: "@PROGRAM.LIVE.BOT"
       MUMBLE_PASSWORD: ${MUMBLE_USER_PASSWORD}
       MUMBLE_CHANNEL: ${STREAMECHO_MUMBLE_CHANNEL:-}
-      STREAM_URL: ${STREAMECHO_STREAM_URL}
+      SOURCE: ${STREAMECHO_STREAM_URL}
     networks:
       - streamecho-2-mist
       - streamecho-2-mumble
     restart: unless-stopped
 
   streamecho-locked:
-    image: ghcr.io/blokadainfo/streamecho:v0.0.3
+    image: ghcr.io/blokadainfo/streamecho:v0.0.4
     environment:
       MUMBLE_ADDRESS: ${STREAMECHO_MUMBLE_ADDRESS} # TODO: Why mumble internal net doesn't work?
       MUMBLE_USERNAME: "__dont_touch_ma_spaghet__"
       MUMBLE_PASSWORD: ${MUMBLE_USER_PASSWORD}
       MUMBLE_CHANNEL: ${STREAMECHO_LOCKED_MUMBLE_CHANNEL:-}
       MUMBLE_CHANNEL_LOCK: "true"
-      STREAM_URL: ${STREAMECHO_STREAM_URL}
+      SOURCE: ${STREAMECHO_STREAM_URL}
     networks:
       - streamecho-locked-2-mist
       - streamecho-locked-2-mumble
+    restart: unless-stopped
+
+  streamecho-audiocircuit:
+    image: ghcr.io/blokadainfo/streamecho:v0.0.4
+    environment:
+      MUMBLE_ADDRESS: ${STREAMECHO_MUMBLE_ADDRESS} # TODO: Why mumble internal net doesn't work?
+      MUMBLE_USERNAME: "@AUDIO.CIRCUIT.BOT"
+      MUMBLE_PASSWORD: ${MUMBLE_USER_PASSWORD}
+      MUMBLE_CHANNEL: ${STREAMECHO_AUDIO_CIRCUIT_MUMBLE_CHANNEL:-}
+      MUMBLE_CHANNEL_LOCK: "true"
+      SOURCE: "/audiocircuit.m4a"
+      DELAY_SECONDS: 0
+    volumes:
+      - type: bind
+        source: ./audiocircuit.m4a
+        target: /audiocircuit.m4a
+        read_only: true
+    networks:
+      - streamecho-audiocircuit-2-mumble
     restart: unless-stopped
 
 networks:
@@ -345,6 +365,7 @@ networks:
   streamecho-2-mumble:
   streamecho-locked-2-mist:
   streamecho-locked-2-mumble:
+  streamecho-audiocircuit-2-mumble:
 
 volumes:
   crowdsec-db-vol:
