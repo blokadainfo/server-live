@@ -201,6 +201,7 @@ services:
       - traefik-2-mist
       - overlayer-2-mist
       - streamecho-2-mist
+      - streamecho-locked-2-mist
     volumes:
       - type: volume
         source: mist-data-vol
@@ -293,22 +294,37 @@ services:
       - "64738:64738/udp"
     networks:
       streamecho-2-mumble:
+      streamecho-locked-2-mumble:
       wireguard-2-internal:
         ipv4_address: 172.16.13.2
     restart: unless-stopped
 
   # StreamEcho
   streamecho:
-    image: ghcr.io/blokadainfo/streamecho:v0.0.2
+    image: ghcr.io/blokadainfo/streamecho:v0.0.3
     environment:
       MUMBLE_ADDRESS: ${STREAMECHO_MUMBLE_ADDRESS} # TODO: Why mumble internal net doesn't work?
-      MUMBLE_USERNAME: "@PROGRAM.LIVE"
+      MUMBLE_USERNAME: "@PROGRAM.LIVE.BOT"
       MUMBLE_PASSWORD: ${MUMBLE_USER_PASSWORD}
       MUMBLE_CHANNEL: ${STREAMECHO_MUMBLE_CHANNEL:-}
       STREAM_URL: ${STREAMECHO_STREAM_URL}
     networks:
       - streamecho-2-mist
       - streamecho-2-mumble
+    restart: unless-stopped
+
+  streamecho-locked:
+    image: ghcr.io/blokadainfo/streamecho:v0.0.3
+    environment:
+      MUMBLE_ADDRESS: ${STREAMECHO_MUMBLE_ADDRESS} # TODO: Why mumble internal net doesn't work?
+      MUMBLE_USERNAME: "__dont_touch_ma_spaghet__"
+      MUMBLE_PASSWORD: ${MUMBLE_USER_PASSWORD}
+      MUMBLE_CHANNEL: ${STREAMECHO_LOCKED_MUMBLE_CHANNEL:-}
+      MUMBLE_CHANNEL_LOCK: "true"
+      STREAM_URL: ${STREAMECHO_STREAM_URL}
+    networks:
+      - streamecho-locked-2-mist
+      - streamecho-locked-2-mumble
     restart: unless-stopped
 
 networks:
@@ -327,6 +343,8 @@ networks:
   overlayer-2-mist:
   streamecho-2-mist:
   streamecho-2-mumble:
+  streamecho-locked-2-mist:
+  streamecho-locked-2-mumble:
 
 volumes:
   crowdsec-db-vol:
