@@ -236,7 +236,7 @@ services:
 
   # BBox Receiver
   bbox-receiver:
-    image: docker.io/datagutt/belabox-receiver:2.9.0
+    image: docker.io/datagutt/belabox-receiver:3.1.1
     ports:
       - "5000:5000/udp" # SRTLA
       # - "8282:8282/udp" # SRT OUT - Not needed as we pull the stream in Mist (docker internal network)
