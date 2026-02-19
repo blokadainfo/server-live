@@ -318,7 +318,7 @@ services:
     image: ghcr.io/blokadainfo/streamecho:v0.0.4
     environment:
       MUMBLE_ADDRESS: "mumble:64738"
-      MUMBLE_USERNAME: "__dont_touch_ma_spaghet__"
+      MUMBLE_USERNAME: "_ne_pomeraj_me_@PROGRAM.LIVE.BOT"
       MUMBLE_PASSWORD: ${MUMBLE_USER_PASSWORD}
       MUMBLE_CHANNEL: ${STREAMECHO_LOCKED_MUMBLE_CHANNEL:-}
       MUMBLE_CHANNEL_LOCK: "true"
@@ -332,7 +332,7 @@ services:
     image: ghcr.io/blokadainfo/streamecho:v0.0.4
     environment:
       MUMBLE_ADDRESS: "mumble:64738"
-      MUMBLE_USERNAME: "@AUDIO.CIRCUIT.BOT"
+      MUMBLE_USERNAME: "_ne_pomeraj_me_@TEST.AUDIO.BOT"
       MUMBLE_PASSWORD: ${MUMBLE_USER_PASSWORD}
       MUMBLE_CHANNEL: ${STREAMECHO_AUDIO_CIRCUIT_MUMBLE_CHANNEL:-}
       MUMBLE_CHANNEL_LOCK: "true"
