@@ -305,7 +305,7 @@ services:
     image: ghcr.io/blokadainfo/streamecho:v0.0.4
     environment:
       MUMBLE_ADDRESS: "mumble:64738"
-      MUMBLE_USERNAME: "@PROGRAM.LIVE.BOT"
+      MUMBLE_USERNAME: "@LEGACY.PROGRAM.LIVE.BOT"
       MUMBLE_PASSWORD: ${MUMBLE_USER_PASSWORD}
       MUMBLE_CHANNEL: ${STREAMECHO_MUMBLE_CHANNEL:-}
       SOURCE: ${STREAMECHO_STREAM_URL}
