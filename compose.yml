@@ -276,6 +276,19 @@ services:
       - overlayer-2-mist
     restart: unless-stopped
 
+  # Graphix
+  graphix:
+    image: ghcr.io/djordje-mancic/graphix:0.0.1
+    volumes:
+      - type: bind
+        source: ${GRAPHIX_GRAPHICS_PATH}
+        target: /app/graphics
+        read_only: true
+    networks:
+      wireguard-2-internal:
+        ipv4_address: 172.16.13.3
+    restart: unless-stopped
+
   # Mumble
   mumble:
     image: docker.io/mumblevoip/mumble-server:v1.5.857
