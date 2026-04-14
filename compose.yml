@@ -167,7 +167,7 @@ services:
       BELAUI_REMOTE_DOMAIN: ${BELAUI_REMOTE_DOMAIN}
     volumes:
       - type: bind
-        source: ./config/Caddyfile
+        source: ./config/belaui.Caddyfile
         target: /etc/caddy/Caddyfile
         read_only: true
     network_mode: service:wireguard # Required to reverse proxy requests to internal VPN network
@@ -285,6 +285,22 @@ services:
         target: /app/graphics
         read_only: true
     networks:
+      - graphix-https-2-graphix
+    restart: unless-stopped
+
+  graphix-https:
+    image: docker.io/library/caddy:2.11
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL}
+      GRAPHIX_REMOTE_DOMAIN: ${GRAPHIX_HTTPS_REMOTE_DOMAIN}
+      CLOUDFLARE_API_TOKEN: ${GRAPHIX_HTTPS_CLOUDFLARE_API_TOKEN}
+    volumes:
+      - type: bind
+        source: ./config/graphix.Caddyfile
+        target: /etc/caddy/Caddyfile
+        read_only: true
+    networks:
+      graphix-https-2-graphix:
       wireguard-2-internal:
         ipv4_address: 172.16.13.3
     restart: unless-stopped
