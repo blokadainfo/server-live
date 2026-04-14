@@ -167,7 +167,7 @@ services:
       BELAUI_REMOTE_DOMAIN: ${BELAUI_REMOTE_DOMAIN}
     volumes:
       - type: bind
-        source: ./config/Caddyfile
+        source: ./config/belaui.Caddyfile
         target: /etc/caddy/Caddyfile
         read_only: true
     network_mode: service:wireguard # Required to reverse proxy requests to internal VPN network
@@ -276,6 +276,35 @@ services:
       - overlayer-2-mist
     restart: unless-stopped
 
+  # Graphix
+  graphix:
+    image: ghcr.io/djordje-mancic/graphix:0.0.1
+    volumes:
+      - type: bind
+        source: ${GRAPHIX_GRAPHICS_PATH}
+        target: /app/graphics
+        read_only: true
+    networks:
+      - graphix-https-2-graphix
+    restart: unless-stopped
+
+  graphix-https:
+    image: ghcr.io/caddy-dns/cloudflare:v0.2.4
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL}
+      GRAPHIX_REMOTE_DOMAIN: ${GRAPHIX_HTTPS_REMOTE_DOMAIN}
+      CLOUDFLARE_API_TOKEN: ${GRAPHIX_HTTPS_CLOUDFLARE_API_TOKEN}
+    volumes:
+      - type: bind
+        source: ./config/graphix.Caddyfile
+        target: /etc/caddy/Caddyfile
+        read_only: true
+    networks:
+      graphix-https-2-graphix:
+      wireguard-2-internal:
+        ipv4_address: 172.16.13.3
+    restart: unless-stopped
+
   # Mumble
   mumble:
     image: docker.io/mumblevoip/mumble-server:v1.5.857
@@ -361,6 +390,7 @@ networks:
           gateway: "172.16.13.1"
   mist-2-bbox-receiver:
   overlayer-2-mist:
+  graphix-https-2-graphix:
   streamecho-2-mist:
   streamecho-2-mumble:
   streamecho-locked-2-mist:
