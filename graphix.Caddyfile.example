@@ -6,7 +6,7 @@
 {$GRAPHIX_REMOTE_DOMAIN} {
     encode gzip zstd
 
-    reverse_proxy graphix:80 {
+    reverse_proxy graphix:3000 {
         header_up Host {host}
         header_up X-Real-IP {remote_host}
         header_up X-Forwarded-For {remote_host}
