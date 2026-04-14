@@ -289,7 +289,7 @@ services:
     restart: unless-stopped
 
   graphix-https:
-    image: docker.io/library/caddy:2.11
+    image: ghcr.io/caddy-dns/cloudflare:v0.2.4
     environment:
       ACME_EMAIL: ${ACME_EMAIL}
       GRAPHIX_REMOTE_DOMAIN: ${GRAPHIX_HTTPS_REMOTE_DOMAIN}
