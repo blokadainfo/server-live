@@ -390,6 +390,7 @@ networks:
           gateway: "172.16.13.1"
   mist-2-bbox-receiver:
   overlayer-2-mist:
+  graphix-https-2-graphix:
   streamecho-2-mist:
   streamecho-2-mumble:
   streamecho-locked-2-mist:
