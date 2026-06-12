@@ -110,7 +110,7 @@ services:
 
   # VPN
   wireguard:
-    image: ghcr.io/wg-easy/wg-easy:15.2.1
+    image: ghcr.io/wg-easy/wg-easy:15.3.0
     environment:
       WG_DEVICE: eth1 # WARN: Make sure the interface is eth1 (not eth0) via GUI
       INIT_ENABLED: true
