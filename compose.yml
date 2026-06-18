@@ -142,6 +142,9 @@ services:
         driver_opts:
           com.docker.network.endpoint.ifname: eth1
         ipv4_address: 172.16.13.254
+      wireguard-multipath-2-wireguard:
+        driver_opts:
+          com.docker.network.endpoint.ifname: eth2
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
@@ -158,6 +161,17 @@ services:
       - "traefik.http.routers.wireguard.tls.certresolver=letsencrypt"
       - "traefik.http.routers.wireguard.service=wireguard"
       - "traefik.http.services.wireguard.loadbalancer.server.port=51821"
+    restart: unless-stopped
+
+  wireguard-multipath:
+    image: ghcr.io/blokadainfo/wireguard-multipath:develop # TODO: Pin to version
+    command: ["server"]
+    environment:
+      WGMP_SERVER_WIREGUARD_ADDR: "wireguard:51820"
+    ports:
+      - "59501:59501/udp"
+    networks:
+      wireguard-multipath-2-wireguard:
     restart: unless-stopped
 
   # BelaUI Remote
@@ -388,6 +402,7 @@ networks:
       config:
         - subnet: "172.16.13.0/24"
           gateway: "172.16.13.1"
+  wireguard-multipath-2-wireguard:
   mist-2-bbox-receiver:
   overlayer-2-mist:
   graphix-https-2-graphix:
