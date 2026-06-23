@@ -164,7 +164,7 @@ services:
     restart: unless-stopped
 
   wireguard-multipath:
-    image: ghcr.io/blokadainfo/wireguard-multipath:v0.0.6
+    image: ghcr.io/blokadainfo/wireguard-multipath:v0.0.7
     command: ["server"]
     environment:
       WGMP_SERVER_WIREGUARD_ADDR: "wireguard:51820"
