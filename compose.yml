@@ -1,7 +1,7 @@
 services:
   # Reverse proxy
   crowdsec:
-    image: docker.io/crowdsecurity/crowdsec:v1.6.11
+    image: docker.io/crowdsecurity/crowdsec:v1.7.8-slim
     environment:
       COLLECTIONS: "crowdsecurity/traefik crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules"
       CUSTOM_HOSTNAME: "crowdsec"
@@ -27,6 +27,7 @@ services:
         target: /etc/crowdsec/acquis.yaml
         read_only: true
     networks:
+      - crowdsec-2-internet
       - traefik-2-crowdsec
     restart: unless-stopped
     healthcheck:
@@ -41,7 +42,7 @@ services:
       start_period: 30s
 
   traefik:
-    image: docker.io/library/traefik:v3.6.6
+    image: docker.io/library/traefik:v3.7.7
     command:
       - "--accesslog"
       - "--accesslog.filepath=/var/log/traefik/access.log"
@@ -59,7 +60,7 @@ services:
       - "--certificatesresolvers.letsencrypt.acme.storage=acme/acme.json"
       - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
       - "--experimental.plugins.bouncer.modulename=github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin"
-      - "--experimental.plugins.bouncer.version=v1.4.6"
+      - "--experimental.plugins.bouncer.version=v1.6.0"
     ports:
       - "80:8080/tcp"
       - "443:8443/tcp"
@@ -80,6 +81,7 @@ services:
         target: /var/run/docker.sock
         read_only: true
     networks:
+      - traefik-2-internet
       - traefik-2-crowdsec
       - traefik-2-whoami
       - traefik-2-wireguard
@@ -112,7 +114,8 @@ services:
   wireguard:
     image: ghcr.io/wg-easy/wg-easy:15.3.0
     environment:
-      WG_DEVICE: eth1 # WARN: Make sure the interface is eth1 (not eth0) via GUI
+      WG_DEVICE: eth0
+      INSECURE: true
       INIT_ENABLED: true
       INIT_USERNAME: ${VPN_GUI_USERNAME:-admin}
       INIT_PASSWORD: ${VPN_GUI_PASSWORD}
@@ -135,7 +138,7 @@ services:
     ports:
       - "51820:51820/udp"
     networks:
-      traefik-2-wireguard:
+      wireguard-2-internet:
         driver_opts:
           com.docker.network.endpoint.ifname: eth0
       wireguard-2-internal:
@@ -145,6 +148,9 @@ services:
       wireguard-multipath-2-wireguard:
         driver_opts:
           com.docker.network.endpoint.ifname: eth2
+      traefik-2-wireguard:
+        driver_opts:
+          com.docker.network.endpoint.ifname: eth3
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
@@ -171,6 +177,7 @@ services:
     ports:
       - "59501:59501/udp"
     networks:
+      wireguard-multipath-2-internet:
       wireguard-multipath-2-wireguard:
     restart: unless-stopped
 
@@ -187,7 +194,7 @@ services:
 
   # BelaUI Remote
   belaui-remote:
-    image: docker.io/library/caddy:2.11
+    image: docker.io/library/caddy:2.11.4
     environment:
       BELAUI_REMOTE_DOMAIN: ${BELAUI_REMOTE_DOMAIN}
     volumes:
@@ -208,20 +215,20 @@ services:
       - "traefik.http.services.belaui-remote.loadbalancer.server.port=80"
     restart: unless-stopped
 
-  # Mist
+  # Restreamer
   mist:
     image: docker.io/ddvtech/mistserver:3.9.2
-    command:
-      - "-c"
-      - "/var/mist/config.json"
+    command: ["-c", "/var/mist/config.json"]
     shm_size: 8gb
     environment:
       DOMAIN: ${MIST_DOMAIN}
     ports:
-      - "1935:1935/tcp" # RTMP IN/OUT
+      # - "1934:1934/tcp" # RTMP IN
+      - "1935:1935/tcp" # RTMP OUT
       - "8889:8889/udp" # SRT IN
       - "9000:9000/udp" # SRT OUT
     networks:
+      - mist-2-internet
       - mist-2-bbox-receiver
       - traefik-2-mist
       - overlayer-2-mist
@@ -259,9 +266,8 @@ services:
     healthcheck:
       disable: true # TODO
 
-  # BBox Receiver
   bbox-receiver:
-    image: docker.io/datagutt/belabox-receiver:3.1.1
+    image: docker.io/datagutt/belabox-receiver:3.5.0
     ports:
       - "5000:5000/udp" # SRTLA
       # - "8282:8282/udp" # SRT OUT - Not needed as we pull the stream in Mist (docker internal network)
@@ -273,10 +279,10 @@ services:
         target: /app/config.json
         read_only: true
     networks:
+      - bbox-receiver-2-internet
       - mist-2-bbox-receiver
     restart: unless-stopped
 
-  # Overlayer
   overlayer:
     image: ghcr.io/blokadainfo/overlayer:v1.0.0
     environment:
@@ -292,6 +298,8 @@ services:
       STREAMS_2_DST: ${OVERLAYER_STREAMS_2_DST}
       STREAMS_3_SRC: ${OVERLAYER_STREAMS_3_SRC}
       STREAMS_3_DST: ${OVERLAYER_STREAMS_3_DST}
+      STREAMS_4_SRC: ${OVERLAYER_STREAMS_4_SRC}
+      STREAMS_4_DST: ${OVERLAYER_STREAMS_4_DST}
     volumes:
       - type: bind
         source: ./logo.svg
@@ -330,9 +338,9 @@ services:
         ipv4_address: 172.16.13.3
     restart: unless-stopped
 
-  # Mumble
+  # VoIP
   mumble:
-    image: docker.io/mumblevoip/mumble-server:v1.5.857
+    image: docker.io/mumblevoip/mumble-server:v1.5.901
     environment:
       MUMBLE_SUPERUSER_NAME: admin
       MUMBLE_SUPERUSER_PASSWORD: ${MUMBLE_ADMIN_PASSWORD}
@@ -347,6 +355,7 @@ services:
       - "64738:64738/tcp"
       - "64738:64738/udp"
     networks:
+      mumble-2-internet:
       streamecho-2-mumble:
       streamecho-locked-2-mumble:
       streamecho-audiocircuit-2-mumble:
@@ -354,7 +363,6 @@ services:
         ipv4_address: 172.16.13.2
     restart: unless-stopped
 
-  # StreamEcho
   streamecho:
     image: ghcr.io/blokadainfo/streamecho:v0.0.4
     environment:
@@ -402,26 +410,54 @@ services:
     restart: unless-stopped
 
 networks:
+  crowdsec-2-internet:
+    internal: false
+  traefik-2-internet:
+    internal: false
   traefik-2-crowdsec:
+    internal: true
   traefik-2-whoami:
+    internal: true
   traefik-2-wireguard:
+    internal: true
   traefik-2-mist:
+    internal: true
+  wireguard-2-internet:
+    internal: false
   wireguard-2-internal:
+    internal: true
     driver: bridge
     ipam:
       driver: default
       config:
         - subnet: "172.16.13.0/24"
           gateway: "172.16.13.1"
+  wireguard-multipath-2-internet:
+    internal: false
   wireguard-multipath-2-wireguard:
+    internal: true
+  mist-2-internet:
+    internal: false
   mist-2-bbox-receiver:
+    internal: true
+  bbox-receiver-2-internet:
+    internal: false
   overlayer-2-mist:
+    internal: true
   graphix-https-2-graphix:
+    internal: true
+  mumble-2-internet:
+    internal: false
   streamecho-2-mist:
+    internal: true
   streamecho-2-mumble:
+    internal: true
   streamecho-locked-2-mist:
+    internal: true
   streamecho-locked-2-mumble:
+    internal: true
   streamecho-audiocircuit-2-mumble:
+    internal: true
 
 volumes:
   crowdsec-db-vol:
