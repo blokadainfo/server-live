@@ -56,7 +56,7 @@ services:
       INIT_ENABLED: true
       INIT_USERNAME: ${VPN_GUI_USERNAME:-admin}
       INIT_PASSWORD: ${VPN_GUI_PASSWORD}
-      INIT_HOST: ${VPN_DOMAIN}
+      INIT_HOST: ${VPN_ENDPOINT}
       INIT_PORT: 51820
       INIT_DNS: ${VPN_DNS:-} # WARN: Remove empty DNS entry and add keepalive 25 via GUI
       INIT_IPV4_CIDR: "172.16.12.0/24"
