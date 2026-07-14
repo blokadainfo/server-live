@@ -16,6 +16,7 @@ services:
       - "--certificatesresolvers.letsencrypt.acme.email=${TRAEFIK_ACME_EMAIL}"
       - "--certificatesresolvers.letsencrypt.acme.storage=acme/acme.json"
       - "--certificatesresolvers.letsencrypt.acme.dnsChallenge.provider=cloudflare"
+      - "--certificatesresolvers.letsencrypt.acme.dnsChallenge.resolvers=1.1.1.1:53,1.0.0.1:53"
     environment:
       CF_DNS_API_TOKEN: ${TRAEFIK_CF_API_TOKEN}
       CF_ZONE_API_TOKEN: ${TRAEFIK_CF_API_TOKEN}
