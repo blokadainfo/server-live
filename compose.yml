@@ -1,46 +1,5 @@
 services:
   # Reverse proxy
-  crowdsec:
-    image: docker.io/crowdsecurity/crowdsec:v1.7.8-slim
-    environment:
-      COLLECTIONS: "crowdsecurity/traefik crowdsecurity/appsec-virtual-patching crowdsecurity/appsec-generic-rules"
-      CUSTOM_HOSTNAME: "crowdsec"
-      BOUNCER_KEY_TRAEFIK: ${BOUNCER_KEY_TRAEFIK}
-    volumes:
-      - type: volume
-        source: traefik-logs-vol
-        target: /var/log/traefik
-        volume:
-          nocopy: false
-      - type: volume
-        source: crowdsec-db-vol
-        target: /var/lib/crowdsec/data
-        volume:
-          nocopy: false
-      - type: volume
-        source: crowdsec-conf-vol
-        target: /etc/crowdsec
-        volume:
-          nocopy: false
-      - type: bind
-        source: ./acquis.yaml
-        target: /etc/crowdsec/acquis.yaml
-        read_only: true
-    networks:
-      - crowdsec-2-internet
-      - traefik-2-crowdsec
-    restart: unless-stopped
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "wget --spider --quiet --tries=1 --timeout=5 http://localhost:8080/health > /dev/null 2>&1 || exit 1",
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-
   traefik:
     image: docker.io/library/traefik:v3.7.7
     command:
@@ -56,15 +15,12 @@ services:
       - "--entrypoints.websecure.http3"
       - "--entrypoints.websecure.http3.advertisedPort=443"
       - "--entrypoints.websecure.http.middlewares=crowdsec@docker"
-      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.email=${TRAEFIK_ACME_EMAIL}"
       - "--certificatesresolvers.letsencrypt.acme.storage=acme/acme.json"
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
-      - "--experimental.plugins.bouncer.modulename=github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin"
-      - "--experimental.plugins.bouncer.version=v1.6.0"
-    ports:
-      - "80:8080/tcp"
-      - "443:8443/tcp"
-      - "443:8443/udp"
+      - "--certificatesresolvers.letsencrypt.acme.dnsChallenge.provider=cloudflare"
+    environment:
+      CF_DNS_API_TOKEN: ${TRAEFIK_CF_API_TOKEN}
+      CF_ZONE_API_TOKEN: ${TRAEFIK_CF_API_TOKEN}
     volumes:
       - type: volume
         source: traefik-logs-vol
@@ -80,35 +36,18 @@ services:
         source: /var/run/docker.sock
         target: /var/run/docker.sock
         read_only: true
+    ports:
+      - "127.0.0.1:80:8080/tcp" # WARN: Accessible on localhost only (SSH tunnel)
+      - "127.0.0.1:443:8443/tcp" # WARN: Accessible on localhost only (SSH tunnel)
+      - "127.0.0.1:443:8443/udp" # WARN: Accessible on localhost only (SSH tunnel)
     networks:
-      - traefik-2-internet
-      - traefik-2-crowdsec
-      - traefik-2-whoami
-      - traefik-2-wireguard
-      - traefik-2-mist
+      traefik-2-internet:
+      traefik-2-wireguard:
+      traefik-2-mist:
+      traefik-2-graphix:
+      wireguard-2-internal:
+        ipv4_address: 172.16.13.1 # WARN: Makes ports above accessible over VPN
     restart: unless-stopped
-    depends_on:
-      crowdsec:
-        condition: service_healthy
-        restart: true
-
-  whoami:
-    image: docker.io/traefik/whoami:v1.11
-    command:
-      - "--port=8080"
-      - "--name=whoami"
-    networks:
-      - traefik-2-whoami
-    restart: unless-stopped
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=${DOCKER_NETWORK_PREFIX}_traefik-2-whoami"
-      - "traefik.http.middlewares.crowdsec.plugin.bouncer.enabled=true"
-      - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdsecmode=stream"
-      - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdseclapikey=${BOUNCER_KEY_TRAEFIK}"
-      - "traefik.http.middlewares.crowdsec.plugin.bouncer.crowdsecappsecenabled=true"
-      - "traefik.http.middlewares.authelia.forwardAuth.address=https://${AUTHELIA_DOMAIN}/api/authz/forward-auth"
-      - "traefik.http.middlewares.authelia.forwardAuth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Email,Remote-Name"
 
   # VPN
   wireguard:
@@ -144,7 +83,7 @@ services:
       wireguard-2-internal:
         driver_opts:
           com.docker.network.endpoint.ifname: eth1
-        ipv4_address: 172.16.13.254
+        ipv4_address: 172.16.13.253
       wireguard-multipath-2-wireguard:
         driver_opts:
           com.docker.network.endpoint.ifname: eth2
@@ -161,7 +100,6 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=${DOCKER_NETWORK_PREFIX}_traefik-2-wireguard"
       - "traefik.http.routers.wireguard.rule=Host(`${VPN_DOMAIN}`)"
-      - "traefik.http.routers.wireguard.middlewares=authelia@docker"
       - "traefik.http.routers.wireguard.entrypoints=websecure"
       - "traefik.http.routers.wireguard.tls=true"
       - "traefik.http.routers.wireguard.tls.certresolver=letsencrypt"
@@ -189,7 +127,7 @@ services:
     #   - "5201:5201/udp"
     networks:
       wireguard-2-internal:
-        ipv4_address: 172.16.13.253
+        ipv4_address: 172.16.13.3
     restart: unless-stopped
 
   # BelaUI Remote
@@ -206,8 +144,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=${DOCKER_NETWORK_PREFIX}_traefik-2-wireguard" # WARN: network_mode: service:wireguard
-      - "traefik.http.routers.belaui-remote.rule=Host(`cam1.${BELAUI_REMOTE_DOMAIN}`) || Host(`cam2.${BELAUI_REMOTE_DOMAIN}`) || Host(`cam3.${BELAUI_REMOTE_DOMAIN}`) || Host(`drn1.${BELAUI_REMOTE_DOMAIN}`) || Host(`drn2.${BELAUI_REMOTE_DOMAIN}`)"
-      - "traefik.http.routers.belaui-remote.middlewares=authelia@docker"
+      - "traefik.http.routers.belaui-remote.rule=Host(`*.${BELAUI_REMOTE_DOMAIN}`)" # WARN: Wildcard subdomain
       - "traefik.http.routers.belaui-remote.entrypoints=websecure"
       - "traefik.http.routers.belaui-remote.tls=true"
       - "traefik.http.routers.belaui-remote.tls.certresolver=letsencrypt"
@@ -249,7 +186,6 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=${DOCKER_NETWORK_PREFIX}_traefik-2-mist"
       - "traefik.http.routers.mist-ui.rule=Host(`${MIST_DOMAIN}`)"
-      - "traefik.http.routers.mist-ui.middlewares=authelia@docker"
       - "traefik.http.routers.mist-ui.entrypoints=websecure"
       - "traefik.http.routers.mist-ui.tls=true"
       - "traefik.http.routers.mist-ui.tls.certresolver=letsencrypt"
@@ -269,7 +205,7 @@ services:
   bbox-receiver:
     image: docker.io/datagutt/belabox-receiver:3.5.0
     ports:
-      - "5000:5000/udp" # SRTLA
+      - "5000:5000/udp" # SRTLA IN
       # - "8282:8282/udp" # SRT OUT - Not needed as we pull the stream in Mist (docker internal network)
       # - "8181:8181/tcp" # Stats - Not needed (yet)
       # - "3000:3000/tcp" # Stats (Legacy) - Not needed
@@ -318,24 +254,16 @@ services:
         target: /app/graphics
         read_only: true
     networks:
-      - graphix-https-2-graphix
-    restart: unless-stopped
-
-  graphix-https:
-    image: ghcr.io/caddy-dns/cloudflare:v0.2.4
-    environment:
-      ACME_EMAIL: ${ACME_EMAIL}
-      GRAPHIX_REMOTE_DOMAIN: ${GRAPHIX_HTTPS_REMOTE_DOMAIN}
-      CLOUDFLARE_API_TOKEN: ${GRAPHIX_HTTPS_CLOUDFLARE_API_TOKEN}
-    volumes:
-      - type: bind
-        source: ./config/graphix.Caddyfile
-        target: /etc/caddy/Caddyfile
-        read_only: true
-    networks:
-      graphix-https-2-graphix:
-      wireguard-2-internal:
-        ipv4_address: 172.16.13.3
+      - traefik-2-graphix
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=${DOCKER_NETWORK_PREFIX}_traefik-2-graphix"
+      - "traefik.http.routers.graphix.rule=Host(`${GRAPHIX_DOMAIN}`)"
+      - "traefik.http.routers.graphix.entrypoints=websecure"
+      - "traefik.http.routers.graphix.tls=true"
+      - "traefik.http.routers.graphix.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.graphix.service=graphix"
+      - "traefik.http.services.graphix.loadbalancer.server.port=3000"
     restart: unless-stopped
 
   # VoIP
@@ -410,17 +338,13 @@ services:
     restart: unless-stopped
 
 networks:
-  crowdsec-2-internet:
-    internal: false
   traefik-2-internet:
     internal: false
-  traefik-2-crowdsec:
-    internal: true
-  traefik-2-whoami:
-    internal: true
   traefik-2-wireguard:
     internal: true
   traefik-2-mist:
+    internal: true
+  traefik-2-graphix:
     internal: true
   wireguard-2-internet:
     internal: false
@@ -431,7 +355,7 @@ networks:
       driver: default
       config:
         - subnet: "172.16.13.0/24"
-          gateway: "172.16.13.1"
+          gateway: "172.16.13.254"
   wireguard-multipath-2-internet:
     internal: false
   wireguard-multipath-2-wireguard:
@@ -443,8 +367,6 @@ networks:
   bbox-receiver-2-internet:
     internal: false
   overlayer-2-mist:
-    internal: true
-  graphix-https-2-graphix:
     internal: true
   mumble-2-internet:
     internal: false
@@ -460,8 +382,6 @@ networks:
     internal: true
 
 volumes:
-  crowdsec-db-vol:
-  crowdsec-conf-vol:
   traefik-logs-vol:
   traefik-acme-vol:
   wireguard-conf-vol:
