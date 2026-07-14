@@ -7,11 +7,11 @@ services:
       - "--accesslog.filepath=/var/log/traefik/access.log"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:8080"
+      - "--entrypoints.web.address=:80"
       - "--entrypoints.web.http.redirections.entrypoint.to=:443"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
       - "--entrypoints.web.http.middlewares=crowdsec@docker"
-      - "--entrypoints.websecure.address=:8443"
+      - "--entrypoints.websecure.address=:443"
       - "--entrypoints.websecure.http3"
       - "--entrypoints.websecure.http3.advertisedPort=443"
       - "--entrypoints.websecure.http.middlewares=crowdsec@docker"
@@ -37,9 +37,9 @@ services:
         target: /var/run/docker.sock
         read_only: true
     ports:
-      - "127.0.0.1:80:8080/tcp" # WARN: Accessible on localhost only (SSH tunnel)
-      - "127.0.0.1:443:8443/tcp" # WARN: Accessible on localhost only (SSH tunnel)
-      - "127.0.0.1:443:8443/udp" # WARN: Accessible on localhost only (SSH tunnel)
+      - "127.0.0.1:80:80/tcp" # WARN: Accessible on localhost only (SSH tunnel)
+      - "127.0.0.1:443:443/tcp" # WARN: Accessible on localhost only (SSH tunnel)
+      - "127.0.0.1:443:443/udp" # WARN: Accessible on localhost only (SSH tunnel)
     networks:
       traefik-2-internet:
       traefik-2-wireguard:
