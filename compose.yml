@@ -254,6 +254,7 @@ services:
         target: /app/graphics
         read_only: true
     networks:
+      - graphix-2-internet
       - traefik-2-graphix
     labels:
       - "traefik.enable=true"
@@ -368,6 +369,8 @@ networks:
     internal: false
   overlayer-2-mist:
     internal: true
+  graphix-2-internet:
+    internal: false
   mumble-2-internet:
     internal: false
   streamecho-2-mist:
