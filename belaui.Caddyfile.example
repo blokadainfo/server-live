@@ -4,22 +4,43 @@
     }
 }
 
+(proxy_with_offline) {
+    reverse_proxy {args[0]} {
+        transport http {
+            dial_timeout 5s
+        }
+    }
+
+    handle_errors {
+        respond `Remote host is offline.
+
+Upstream: {args[0]}
+Error: {err.message}` 503
+    }
+}
+
+http://*.{$BELAUI_REMOTE_DOMAIN:localhost} {
+    respond `Host "{host}" isn't defined.
+
+Contact the admin team if you expected this host to exist.` 404
+}
+
 http://cam1.{$BELAUI_REMOTE_DOMAIN:localhost} {
-    reverse_proxy 172.16.12.2:80
+    import proxy_with_offline 172.16.12.2:80
 }
 
 http://cam2.{$BELAUI_REMOTE_DOMAIN:localhost} {
-    reverse_proxy 172.16.12.3:80
+    import proxy_with_offline 172.16.12.3:80
 }
 
 http://cam3.{$BELAUI_REMOTE_DOMAIN:localhost} {
-    reverse_proxy 172.16.12.4:80
+    import proxy_with_offline 172.16.12.4:80
 }
 
 http://drn1.{$BELAUI_REMOTE_DOMAIN:localhost} {
-    reverse_proxy 172.16.12.5:80
+    import proxy_with_offline 172.16.12.5:80
 }
 
 http://drn2.{$BELAUI_REMOTE_DOMAIN:localhost} {
-    reverse_proxy 172.16.12.6:80
+    import proxy_with_offline 172.16.12.6:80
 }
