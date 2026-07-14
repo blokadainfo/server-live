@@ -74,6 +74,7 @@ services:
         target: /lib/modules
         read_only: true
     ports:
+      - "127.0.0.1:51821:51821/tcp" # For debugging and maintenance purposes
       - "51820:51820/udp"
     networks:
       wireguard-2-internet:
