@@ -1,53 +1,4 @@
 services:
-  # Reverse proxy
-  traefik:
-    image: docker.io/library/traefik:v3.7.7
-    command:
-      - "--accesslog"
-      - "--accesslog.filepath=/var/log/traefik/access.log"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.web.http.redirections.entrypoint.to=:443"
-      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-      - "--entrypoints.websecure.address=:443"
-      - "--entrypoints.websecure.http3"
-      - "--entrypoints.websecure.http3.advertisedPort=443"
-      - "--certificatesresolvers.letsencrypt.acme.email=${TRAEFIK_ACME_EMAIL}"
-      - "--certificatesresolvers.letsencrypt.acme.storage=acme/acme.json"
-      - "--certificatesresolvers.letsencrypt.acme.dnsChallenge.provider=cloudflare"
-      - "--certificatesresolvers.letsencrypt.acme.dnsChallenge.resolvers=1.1.1.1:53,1.0.0.1:53"
-    environment:
-      CF_DNS_API_TOKEN: ${TRAEFIK_CF_API_TOKEN}
-      CF_ZONE_API_TOKEN: ${TRAEFIK_CF_API_TOKEN}
-    volumes:
-      - type: volume
-        source: traefik-logs-vol
-        target: /var/log/traefik
-        volume:
-          nocopy: false
-      - type: volume
-        source: traefik-acme-vol
-        target: /acme
-        volume:
-          nocopy: false
-      - type: bind
-        source: /var/run/docker.sock
-        target: /var/run/docker.sock
-        read_only: true
-    ports:
-      - "127.0.0.1:80:80/tcp" # WARN: Accessible on localhost only (SSH tunnel)
-      - "127.0.0.1:443:443/tcp" # WARN: Accessible on localhost only (SSH tunnel)
-      - "127.0.0.1:443:443/udp" # WARN: Accessible on localhost only (SSH tunnel)
-    networks:
-      traefik-2-internet:
-      traefik-2-wireguard:
-      traefik-2-mist:
-      traefik-2-graphix:
-      wireguard-2-internal:
-        ipv4_address: 172.16.13.1 # WARN: Makes ports above accessible over VPN
-    restart: unless-stopped
-
   # VPN
   wireguard:
     image: ghcr.io/wg-easy/wg-easy:15.3.0
@@ -128,6 +79,55 @@ services:
     networks:
       wireguard-2-internal:
         ipv4_address: 172.16.13.3
+    restart: unless-stopped
+
+  # Reverse proxy
+  traefik:
+    image: docker.io/library/traefik:v3.7.7
+    command:
+      - "--accesslog"
+      - "--accesslog.filepath=/var/log/traefik/access.log"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=:443"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.websecure.http3"
+      - "--entrypoints.websecure.http3.advertisedPort=443"
+      - "--certificatesresolvers.letsencrypt.acme.email=${TRAEFIK_ACME_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=acme/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.dnsChallenge.provider=cloudflare"
+      - "--certificatesresolvers.letsencrypt.acme.dnsChallenge.resolvers=1.1.1.1:53,1.0.0.1:53"
+    environment:
+      CF_DNS_API_TOKEN: ${TRAEFIK_CF_API_TOKEN}
+      CF_ZONE_API_TOKEN: ${TRAEFIK_CF_API_TOKEN}
+    volumes:
+      - type: volume
+        source: traefik-logs-vol
+        target: /var/log/traefik
+        volume:
+          nocopy: false
+      - type: volume
+        source: traefik-acme-vol
+        target: /acme
+        volume:
+          nocopy: false
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        read_only: true
+    ports:
+      - "127.0.0.1:80:80/tcp" # WARN: Accessible on localhost only (SSH tunnel)
+      - "127.0.0.1:443:443/tcp" # WARN: Accessible on localhost only (SSH tunnel)
+      - "127.0.0.1:443:443/udp" # WARN: Accessible on localhost only (SSH tunnel)
+    networks:
+      traefik-2-internet:
+      traefik-2-wireguard:
+      traefik-2-mist:
+      traefik-2-graphix:
+      wireguard-2-internal:
+        ipv4_address: 172.16.13.1 # WARN: Makes ports above accessible over VPN
     restart: unless-stopped
 
   # BelaUI Remote
@@ -339,14 +339,6 @@ services:
     restart: unless-stopped
 
 networks:
-  traefik-2-internet:
-    internal: false
-  traefik-2-wireguard:
-    internal: true
-  traefik-2-mist:
-    internal: true
-  traefik-2-graphix:
-    internal: true
   wireguard-2-internet:
     internal: false
   wireguard-2-internal:
@@ -360,6 +352,14 @@ networks:
   wireguard-multipath-2-internet:
     internal: false
   wireguard-multipath-2-wireguard:
+    internal: true
+  traefik-2-internet:
+    internal: false
+  traefik-2-wireguard:
+    internal: true
+  traefik-2-mist:
+    internal: true
+  traefik-2-graphix:
     internal: true
   mist-2-internet:
     internal: false
@@ -385,9 +385,9 @@ networks:
     internal: true
 
 volumes:
+  wireguard-conf-vol:
   traefik-logs-vol:
   traefik-acme-vol:
-  wireguard-conf-vol:
   mist-data-vol:
   mist-video-vol:
   mumble-data-vol:
