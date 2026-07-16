@@ -245,14 +245,8 @@ services:
 
   # Graphix
   graphix:
-    image: ghcr.io/djordje-mancic/graphix:0.0.1
-    volumes:
-      - type: bind
-        source: ${GRAPHIX_GRAPHICS_PATH}
-        target: /app/graphics
-        read_only: true
+    image: ghcr.io/blokadainfo/binfo-graphix:develop
     networks:
-      - graphix-2-internet
       - traefik-2-graphix
     labels:
       - "traefik.enable=true"
@@ -367,8 +361,6 @@ networks:
     internal: false
   overlayer-2-mist:
     internal: true
-  graphix-2-internet:
-    internal: false
   mumble-2-internet:
     internal: false
   streamecho-2-mist:
