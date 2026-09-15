@@ -67,6 +67,18 @@ services:
       wireguard-multipath-2-internet:
       wireguard-multipath-2-wireguard:
     restart: unless-stopped
+  
+  wireguard-multipath-dev:
+    image: ghcr.io/blokadainfo/wireguard-multipath:latest
+    command: ["server"]
+    environment:
+      WGMP_SERVER_WIREGUARD_ADDR: "wireguard:51820"
+    ports:
+      - "60501:59501/udp"
+    networks:
+      wireguard-multipath-2-internet:
+      wireguard-multipath-2-wireguard:
+    restart: unless-stopped
 
   iperf:
     image: docker.io/networkstatic/iperf3:latest
