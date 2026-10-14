@@ -1,7 +1,7 @@
 services:
   # VPN
   wireguard:
-    image: ghcr.io/wg-easy/wg-easy:15.3.0
+    image: ghcr.io/wg-easy/wg-easy:15.4.0
     environment:
       WG_DEVICE: eth0
       INIT_ENABLED: true
@@ -164,7 +164,7 @@ services:
 
   # Restreamer
   mist:
-    image: docker.io/ddvtech/mistserver:3.9.2
+    image: docker.io/ddvtech/mistserver:3.12
     command: ["-c", "/var/mist/config.json"]
     shm_size: 8gb
     environment:
@@ -213,7 +213,7 @@ services:
       disable: true # TODO
 
   bbox-receiver:
-    image: docker.io/datagutt/belabox-receiver:3.5.0
+    image: docker.io/datagutt/belabox-receiver:3.7.1
     ports:
       - "5000:5000/udp" # SRTLA IN
       # - "8282:8282/udp" # SRT OUT - Not needed as we pull the stream in Mist (docker internal network)
@@ -275,7 +275,7 @@ services:
 
   # VoIP
   mumble:
-    image: docker.io/mumblevoip/mumble-server:v1.5.901
+    image: docker.io/mumblevoip/mumble-server:v1.5.939
     environment:
       MUMBLE_SUPERUSER_NAME: admin
       MUMBLE_SUPERUSER_PASSWORD: ${MUMBLE_ADMIN_PASSWORD}
