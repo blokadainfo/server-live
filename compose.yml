@@ -246,8 +246,6 @@ services:
       STREAMS_3_DST: ${OVERLAYER_STREAMS_3_DST}
       STREAMS_4_SRC: ${OVERLAYER_STREAMS_4_SRC}
       STREAMS_4_DST: ${OVERLAYER_STREAMS_4_DST}
-      STREAMS_5_SRC: ${OVERLAYER_STREAMS_5_SRC}
-      STREAMS_5_DST: ${OVERLAYER_STREAMS_5_DST}
     volumes:
       - type: bind
         source: ./logo.svg
