@@ -164,7 +164,7 @@ services:
 
   # Restreamer
   mist:
-    image: docker.io/ddvtech/mistserver:3.9.2
+    image: docker.io/ddvtech/mistserver:3.11.1
     command: ["-c", "/var/mist/config.json"]
     shm_size: 8gb
     environment:
